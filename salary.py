@@ -1,3 +1,4 @@
+import requests
 from environs import Env
 from terminaltables import AsciiTable
 from agregators.superjob import SuperJobAgregator
@@ -14,7 +15,6 @@ def print_salary(salary_statistic, table_title, limit=100):
     table_title = table_title
     table_header = ('Язык программирования', 'Вакансий найдено',
                     'Вакансий обработано', 'Средняя зарплата',)
-
     table_form = []
     table_lines = []
     for language in salary_statistic.keys():
@@ -46,8 +46,12 @@ def grab_superjob(languages):
     superjob_statistics = {}
     for language in languages:
         print(f'SJ.RU - Proceeding language - {language}...')
-        agregator = SuperJobAgregator(superjob_api_key=SUPERJOB_API_KEY,
-                                      language=language)
+        try:
+            agregator = SuperJobAgregator(superjob_api_key=SUPERJOB_API_KEY,
+                                          language=language)
+        except requests.exceptions.HTTPError:
+            print(f'Error occured while load {language} vacancies')
+            continue
         vacancies_found, vacancies_processed, averge_salary = agregator.calculate_average_salary()
         if vacancies_processed > 0:
             superjob_statistics[language] = dict(vacancies_found=vacancies_found,
@@ -62,7 +66,11 @@ def grab_hhjob(languages):
     hh_statistics = {}
     for language in languages:
         print(f'HH.RU - Proceeding language - {language}...')
-        agregator = HeadHunterJobAgregator(language=language)
+        try:
+            agregator = HeadHunterJobAgregator(language=language)
+        except requests.exceptions.HTTPError:
+            print(f'Error occured while load {language} vacancies')
+            continue
         vacancies_found, vacancies_processed, averge_salary = agregator.calculate_average_salary()
         if vacancies_processed > 0:
             hh_statistics[language] = dict(vacancies_found=vacancies_found,
@@ -89,14 +97,15 @@ def main():
                 'Python',
                 'Rust',
                 'Swift',
+                'Cobol',
                 '1с',
-                )
+                 )
     hh_statistics = grab_hhjob(languages)
     print_salary(hh_statistics, 'HeadHunter Moscow')
-    
+
     superjob_statistics = grab_superjob(languages)
     print_salary(superjob_statistics, 'SuperJob Moscow', limit=5)
-    
+
 
 if __name__ == '__main__':
     main()

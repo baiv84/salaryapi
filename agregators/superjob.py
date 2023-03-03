@@ -33,52 +33,42 @@ class SuperJobAgregator:
 
         vacancies_list = []
         headers = {'X-Api-App-Id': self.__superjob_api_key}
-        # params = {
-        #       'keywords[0][keys]': self.__language,
-        #       'keywords[0][skwc]': 'particular',
-        #       'keywords[0][srws]': 10,
-        #       'keywords[1][keys]': self.__exclude_words,
-        #       'keywords[1][skwc]': 'nein',
-        #       'catalogues': self.__catalogues,
-        #       'date_published_from': date_published_from,
-        #       'town': self.__town,
-        #       'count': 100,
-        #       'page': page
-        # }
         params = {
-              'keywords[0][keys]': self.__language + ',программист',
-              'keywords[0][skwc]': 'and',
-              'keywords[0][srws]': 4,
-              'keywords[1][keys]': self.__language + ',разработчик',
-              'keywords[1][skwc]': 'and',
-              'keywords[1][srws]': 4,
-              'keywords[2][keys]': self.__language + ',developer',
-              'keywords[2][skwc]': 'and',
-              'keywords[2][srws]': 4,
-              'keywords[3][keys]': self.__language + ',programmer',
-              'keywords[3][skwc]': 'and',
-              'keywords[3][srws]': 4,
-              'keywords[4][keys]': self.__language + ',инженер',
-              'keywords[4][skwc]': 'and',
-              'keywords[4][srws]': 4,
-              'keywords[5][keys]': self.__language + ',engineer',
-              'keywords[5][skwc]': 'and',
-              'keywords[5][srws]': 4,
-              'keywords[6][keys]': self.__exclude_words,
-              'keywords[6][skwc]': 'nein',
-              'catalogues': self.__catalogues,
-              'date_published_from': date_published_from,
-              'town': self.__town,
-              'count': 100,
-              'page': page
+                'keywords[0][keys]': self.__language + ',программист',
+                'keywords[0][skwc]': 'and',
+                'keywords[0][srws]': 4,
+                'keywords[1][keys]': self.__language + ',разработчик',
+                'keywords[1][skwc]': 'and',
+                'keywords[1][srws]': 4,
+                'keywords[2][keys]': self.__language + ',developer',
+                'keywords[2][skwc]': 'and',
+                'keywords[2][srws]': 4,
+                'keywords[3][keys]': self.__language + ',programmer',
+                'keywords[3][skwc]': 'and',
+                'keywords[3][srws]': 4,
+                'keywords[4][keys]': self.__language + ',инженер',
+                'keywords[4][skwc]': 'and',
+                'keywords[4][srws]': 4,
+                'keywords[5][keys]': self.__language + ',engineer',
+                'keywords[5][skwc]': 'and',
+                'keywords[5][srws]': 4,
+                'keywords[6][keys]': self.__exclude_words,
+                'keywords[6][skwc]': 'nein',
+                'catalogues': self.__catalogues,
+                'date_published_from': date_published_from,
+                'town': self.__town,
+                'count': 100,
+                'page': page
         }
         response = requests.get('https://api.superjob.ru/2.0/vacancies/',
                                 params=params, headers=headers)
         response.raise_for_status()
         raw_vacancies = response.json()['objects']
         for raw_vacancy in raw_vacancies:
-            vacancy = Vacancy(self.__language, raw_vacancy['payment_from'],
-                              raw_vacancy['payment_to'])
+            payment_from = raw_vacancy['payment_from']
+            payment_to = raw_vacancy['payment_to']
+            currency = raw_vacancy['currency']
+            vacancy = Vacancy(self.__language, payment_from, payment_to, currency)
             vacancies_list.append(vacancy)
         return vacancies_list
 
