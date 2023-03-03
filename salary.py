@@ -89,7 +89,6 @@ def main():
                 'Python',
                 'Rust',
                 'Swift',
-                'Cobol',
                 '1с',
                 )
     hh_statistics = grab_hhjob(languages)

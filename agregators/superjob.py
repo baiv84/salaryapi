@@ -1,4 +1,6 @@
+import time
 import requests
+import datetime
 from .vacancy import Vacancy
 
 
@@ -25,6 +27,10 @@ class SuperJobAgregator:
 
     def vacancies_paginator(self, page):
         '''Return particular page vacancies'''
+        today = datetime.date.today()
+        date_published_from = (today - datetime.timedelta(days=30))
+        date_published_from = int(time.mktime(date_published_from.timetuple()))
+
         vacancies_list = []
         headers = {'X-Api-App-Id': self.__superjob_api_key}
         params = {
@@ -34,6 +40,7 @@ class SuperJobAgregator:
               'keywords[1][keys]': self.__exclude_words,
               'keywords[1][skwc]': 'nein',
               'catalogues': self.__catalogues,
+              'date_published_from': date_published_from,
               'town': self.__town,
               'count': 100,
               'page': page
