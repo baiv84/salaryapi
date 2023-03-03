@@ -10,7 +10,7 @@ env.read_env()
 SUPERJOB_API_KEY = env('SUPERJOB_API_KEY')
 
 
-def print_salary(salary_statistic, table_title, limit=100):
+def print_salary(salary_statistic, table_title, limit=90):
     '''Print salary statistics in a good-looking table'''
     table_title = table_title
     table_header = ('Язык программирования', 'Вакансий найдено',
