@@ -4,22 +4,26 @@ from .vacancy import Vacancy
 
 class HeadHunterJobAgregator:
     '''HH.RU vacancies grabber engine'''
-    def __init__(self, language='Python', area=1,
-                 exclude_words=['1с', 'менеджер', 'консультант', 'продавец',
-                                'поддержки', 'поддержка', 'пользователей',]):
+    def __init__(self, language, area=1, period=30,
+                 exclude_words=['менеджер', 'консультант', 'продавец',
+                                'поддержки', 'поддержка', 'пользователей', ]):
         self.__vacancies_list = []
         self.__language = language
         self.__area = area
+        self.__period = period
         self.__exclude_words = ' not '.join(exclude_words)
         self.build_vacancies_list()
 
-    def get_vacancies_number(self):
-        '''Return vanacies number of particular programming language'''
-        return len(self.__vacancies_list)
-
-    def get_programming_language(self):
-        '''Return programming language name'''
-        return self.__language
+    def build_vacancies_list(self):
+        '''Build vacancies list of particular programming language'''
+        page = 0
+        self.__vacancies_list = []
+        while True:
+            vacancies_per_page = self.vacancies_paginator(page)
+            self.__vacancies_list = (self.__vacancies_list + vacancies_per_page)
+            if len(vacancies_per_page) < 100:
+                break
+            page += 1
 
     def vacancies_paginator(self, page):
         '''Return particular page vacancies'''
@@ -37,7 +41,9 @@ class HeadHunterJobAgregator:
         }
         params = {
               'text': f'{self.__language} not {self.__exclude_words} !(разработчик or программист or инженер or developer or programmer or engineer)',
+              'only_with_salary': True,
               'area': self.__area,
+              'period': self.__period,
               'page': page,
               'per_page': 100,
               'search_field': 'name',
@@ -48,36 +54,16 @@ class HeadHunterJobAgregator:
         raw_vacancies = response.json()['items']
 
         for raw_vacancy in raw_vacancies:
-            vacancy_link = raw_vacancy['alternate_url']
             salary = raw_vacancy['salary']
-            if not salary:
-                payment_from = None
-                payment_to = None
-                currency = 'RUR'
-            else:
-                payment_from = salary['from']
-                payment_to = salary['to']
-                currency = salary['currency']
-            vacancy = Vacancy(self.__language, payment_from,
-                              payment_to, vacancy_link,
-                              currency)
+            payment_from = salary['from']
+            payment_to = salary['to']
+            vacancy = Vacancy(self.__language, payment_from, payment_to)
             vacancies_list.append(vacancy)
         return vacancies_list
 
-    def build_vacancies_list(self):
-        '''Build vacancies list of particular programming language'''
-        page = 0
-        self.__vacancies_list = []
-        while True:
-            vacancies_per_page = self.vacancies_paginator(page)
-            self.__vacancies_list = (self.__vacancies_list + vacancies_per_page)
-            if len(vacancies_per_page) < 100:
-                break
-            page += 1
-
     def calculate_average_salary(self):
         '''Calculate average salary for programming language'''
-        average_salary = 0
+        average_salary = None
         handled_vacancies = [vac.predict_rub_salary() for vac in self.__vacancies_list if vac.predict_rub_salary()]
         handled_vacancies_count = len(handled_vacancies)
 
@@ -85,3 +71,11 @@ class HeadHunterJobAgregator:
             average_salary = sum(handled_vacancies) // handled_vacancies_count
         return (self.get_vacancies_number(),
                 handled_vacancies_count, average_salary,)
+
+    def get_vacancies_number(self):
+        '''Return vanacies number of particular programming language'''
+        return len(self.__vacancies_list)
+
+    def get_programming_language(self):
+        '''Return programming language name'''
+        return self.__language

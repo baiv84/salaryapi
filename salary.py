@@ -9,17 +9,20 @@ env.read_env()
 SUPERJOB_API_KEY = env('SUPERJOB_API_KEY')
 
 
-def print_salary(salary_statistic, table_title):
+def print_salary(salary_statistic, table_title, limit=100):
     '''Print salary statistics in a good-looking table'''
     table_title = table_title
     table_header = ('Язык программирования', 'Вакансий найдено',
-                    'Вакансий обработано', 'Средняя зарплата\n      (РУБ)',)
+                    'Вакансий обработано', 'Средняя зарплата',)
 
     table_form = []
     table_lines = []
     for language in salary_statistic.keys():
         salary_params = salary_statistic[language]
         vacancies_found = salary_params['vacancies_found']
+        if vacancies_found < limit:
+            continue
+
         vacancies_processed = salary_params['vacancies_processed']
         average_salary = salary_params['average_salary']
         table_lines.append((language, vacancies_found,
@@ -82,16 +85,20 @@ def main():
                 'C++',
                 'PHP',
                 'JavaScript',
+                'TypeScript',
                 'Python',
                 'Rust',
                 'Swift',
+                'Perl',
+                'Cobol',
+                '1с',
                 )
     hh_statistics = grab_hhjob(languages)
     print_salary(hh_statistics, 'HeadHunter Moscow')
-
+    
     superjob_statistics = grab_superjob(languages)
-    print_salary(superjob_statistics, 'SuperJob Moscow')
-
+    print_salary(superjob_statistics, 'SuperJob Moscow', limit=5)
+    
 
 if __name__ == '__main__':
     main()

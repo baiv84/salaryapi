@@ -4,7 +4,7 @@ from .vacancy import Vacancy
 
 class SuperJobAgregator:
     '''SUPERJOB.RU vacancies grabber engine'''
-    def __init__(self, superjob_api_key, language='Python', catalogues=[48],
+    def __init__(self, superjob_api_key, language, catalogues=[48],
                  town='Moscow', exclude_words=['1с', 'менеджер', 'консультант', 'продавец',
                                                'поддержки', 'поддержка', 'пользователей',]):
         self.__vacancies_list = []
@@ -44,8 +44,7 @@ class SuperJobAgregator:
         raw_vacancies = response.json()['objects']
         for raw_vacancy in raw_vacancies:
             vacancy = Vacancy(self.__language, raw_vacancy['payment_from'],
-                              raw_vacancy['payment_to'], raw_vacancy['link'],
-                              raw_vacancy['currency'])
+                              raw_vacancy['payment_to'])
             vacancies_list.append(vacancy)
         return vacancies_list
 
@@ -62,7 +61,7 @@ class SuperJobAgregator:
 
     def calculate_average_salary(self):
         '''Calculate average salary for programming language'''
-        average_salary = 0
+        average_salary = None
         handled_vacancies = [vac.predict_rub_salary() for vac in self.__vacancies_list if vac.predict_rub_salary()]
         handled_vacancies_count = len(handled_vacancies)
 
