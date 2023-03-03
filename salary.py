@@ -89,7 +89,6 @@ def main():
                 'Python',
                 'Rust',
                 'Swift',
-                'Perl',
                 'Cobol',
                 '1с',
                 )

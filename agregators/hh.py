@@ -57,7 +57,8 @@ class HeadHunterJobAgregator:
             salary = raw_vacancy['salary']
             payment_from = salary['from']
             payment_to = salary['to']
-            vacancy = Vacancy(self.__language, payment_from, payment_to)
+            currency = salary['currency']
+            vacancy = Vacancy(self.__language, payment_from, payment_to, currency)
             vacancies_list.append(vacancy)
         return vacancies_list
 
