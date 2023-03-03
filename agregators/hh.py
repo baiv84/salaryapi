@@ -73,10 +73,10 @@ class HeadHunterJobAgregator:
         return (self.get_vacancies_number(),
                 handled_vacancies_count, average_salary,)
 
-    def get_vacancies_number(self):
-        '''Return vanacies number of particular programming language'''
-        return len(self.__vacancies_list)
-
     def get_programming_language(self):
         '''Return programming language name'''
         return self.__language
+    
+    def get_vacancies_number(self):
+        '''Return vanacies number of particular programming language'''
+        return len(self.__vacancies_list)

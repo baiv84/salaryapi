@@ -6,7 +6,7 @@ class SuperJobAgregator:
     '''SUPERJOB.RU vacancies grabber engine'''
     def __init__(self, superjob_api_key, language, catalogues=[48],
                  town='Moscow', exclude_words=['менеджер', 'консультант', 'продавец',
-                                         'поддержки', 'поддержка', 'пользователей',]):
+                                               'поддержки', 'поддержка', 'пользователей',]):
         self.__vacancies_list = []
         self.__superjob_api_key = superjob_api_key
         self.__language = language

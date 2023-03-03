@@ -27,4 +27,3 @@ class Vacancy:
     def get_payment_to(self):
         '''Payment_to getter'''
         return self.__payment_to
-
