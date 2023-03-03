@@ -17,11 +17,11 @@ class HeadHunterJobAgregator:
     def get_programming_language(self):
         '''Return programming language name'''
         return self.__language
-    
+
     def get_vacancies_number(self):
         '''Return vanacies number of particular programming language'''
         return len(self.__vacancies_list)
-    
+
     def build_vacancies_list(self):
         '''Build vacancies list of particular programming language'''
         page = 0

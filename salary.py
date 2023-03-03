@@ -44,8 +44,8 @@ def print_salary(salary_statistic, table_title, limit=90):
 def grab_superjob(languages):
     '''Grab vacancies from superjob.ru to calculate programmers salaries'''
     superjob_statistics = {}
+    print('\nGenerate superjob.ru statistics. Wait for a while...')
     for language in languages:
-        print(f'SJ.RU - Proceeding language - {language}...')
         try:
             agregator = SuperJobAgregator(superjob_api_key=SUPERJOB_API_KEY,
                                           language=language)
@@ -64,8 +64,8 @@ def grab_superjob(languages):
 def grab_hhjob(languages):
     '''Grab vacancies from hh.ru to calculate programmers salaries'''
     hh_statistics = {}
+    print('\nGenerate hh.ru statistics. Wait for a while...')
     for language in languages:
-        print(f'HH.RU - Proceeding language - {language}...')
         try:
             agregator = HeadHunterJobAgregator(language=language)
         except requests.exceptions.HTTPError:
