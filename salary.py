@@ -1,79 +1,160 @@
+import time
+import datetime
 import requests
 from environs import Env
-from terminaltables import AsciiTable
-from agregators.superjob import SuperJobAgregator
-from agregators.hh import HeadHunterJobAgregator
+from common import predict_rub_salary
+from common import print_salary_statistics
 
 
-env = Env()
-env.read_env()
-SUPERJOB_API_KEY = env('SUPERJOB_API_KEY')
+def get_hh_page(language, area=1, period=30, page=0, per_page=100,
+                exclude_words=['менеджер', 'консультант', 'продавец',
+                               'поддержки', 'поддержка', 'пользователей',]):
+    '''Extract salaries from hh.ru search page with number=<page>'''
+    exclude_words = ' not '.join(exclude_words)
+    params = {
+            'text': f'{language} not {exclude_words} !(разработчик or программист or инженер or developer or programmer or engineer)',
+            'area': area,
+            'period': period,
+            'page': page,
+            'per_page': per_page,
+            'search_field': 'name',
+    }
+    try:
+        response = requests.get('https://api.hh.ru/vacancies/', params=params)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print(f'HH.RU - Error occured while loading {language} vacancies')
+        return []
+
+    hh_page_salaries = []
+    raw_hh_vacancies = response.json()['items']
+    for raw_hh_vacancy in raw_hh_vacancies:
+        salary = raw_hh_vacancy['salary']
+        if salary:
+            vacancy_salary = dict(payment_from=salary['from'],
+                                  payment_to=salary['to'],
+                                  currency=salary['currency'])
+        else:
+            vacancy_salary = None
+        hh_page_salaries.append(vacancy_salary)
+    return hh_page_salaries
 
 
-def print_salary(salary_statistic, table_title, limit=90):
-    '''Print salary statistics in a good-looking table'''
-    table_header = ('Язык программирования', 'Вакансий найдено',
-                    'Вакансий обработано', 'Средняя зарплата',)
-    table_form = []
-    table_lines = []
+def get_superjob_page(language, town='Moscow', catalogues="48", page=0, per_page=100,
+                      exclude_words=['менеджер', 'консультант', 'продавец',
+                                     'поддержки', 'поддержка', 'пользователей',]):
+    '''Extract salaries from superjob.ru search page with <num>=page'''
+    env = Env()
+    api_key = env('SUPERJOB_API_KEY')
 
-    for language in salary_statistic.keys():
-        salary_params = salary_statistic[language]
-        vacancies_found = salary_params['vacancies_found']
-        if vacancies_found < limit:
-            continue
-        vacancies_processed = salary_params['vacancies_processed']
-        average_salary = salary_params['average_salary']
-        table_lines.append((language, vacancies_found,
-                            vacancies_processed, average_salary,))
+    today = datetime.date.today()
+    date_published_from = (today - datetime.timedelta(days=30))
+    date_published_from = int(time.mktime(date_published_from.timetuple()))
 
-    table_lines = sorted(table_lines,
-                         key=lambda lang_statistic: lang_statistic[3],
-                         reverse=True)
-    table_form.append(table_header)
-    table_form += table_lines
+    params = {}
+    headers = {'X-Api-App-Id': api_key}
+    for i, key_word in enumerate(['программист', 'разработчик', 'developer',
+                                  'programmer', 'инженер', 'engineer']):
+        params[f'keywords[{i}][keys]'] = ','.join([language, key_word,])
+        params[f'keywords[{i}][skwc]'] = 'and'
+        params[f'keywords[{i}][srws]'] = 4
+    params['keywords[6][keys]'] = ','.join(exclude_words)
+    params['keywords[6][skwc]'] = 'nein'
+    params['catalogues'] = catalogues
+    params['date_published_from'] = date_published_from
+    params['town'] = town
+    params['count'] = per_page
+    params['page'] = page
 
-    TABLE_DATA = tuple(table_form)
-    table_instance = AsciiTable(TABLE_DATA, table_title)
-    table_instance.justify_columns[2] = 'right'
-    print()
-    print(table_instance.table)
+    try:
+        response = requests.get('https://api.superjob.ru/2.0/vacancies/',
+                                params=params, headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        print(f'SUPERJOB.RU - Error occured while loading {language} vacancies')
+        return []
+    superjob_page_salaries = []
+    raw_vacancies = response.json()['objects']
+    for raw_vacancy in raw_vacancies:
+        payment_from = raw_vacancy['payment_from']
+        payment_to = raw_vacancy['payment_to']
+        currency = raw_vacancy['currency']
+        vacancy_salary = dict(payment_from=payment_from, payment_to=payment_to,
+                              currency=currency)
+        superjob_page_salaries.append(vacancy_salary)
+    return superjob_page_salaries
+
+
+def paginator(language, page_func, per_page=100):
+    '''Get salaries from all pages calling <page_func>'''
+    current_page_index = 0
+    all_pages_salaries = []
+    current_page_salaries = []
+    while True:
+        current_page_salaries = page_func(language=language,
+                                          page=current_page_index)
+        all_pages_salaries.extend(current_page_salaries)
+        if len(current_page_salaries) < per_page:
+            break
+        current_page_index += 1
+    return all_pages_salaries
+
+
+def get_salary_statistics(language, mode='headhunter'):
+    '''Collect language salary statistic from
+        particular data sources - hh.ru | superjob.ru'''
+    page_func_modes = {
+        'headhunter': get_hh_page,
+        'superjob': get_superjob_page,
+    }
+
+    average_salary = 0
+    vacancies_processed = []
+    if mode not in page_func_modes:
+        mode = 'headhunter'
+
+    vacancies_found = paginator(language, page_func=page_func_modes[mode])
+    for vacancy in vacancies_found:
+        salary = predict_rub_salary(vacancy)
+        if salary:
+            vacancies_processed.append(salary)
+
+    vacancies_found_count = len(vacancies_found)
+    vacancies_processed_count = len(vacancies_processed)
+    if vacancies_processed_count > 0:
+        average_salary = sum(vacancies_processed) // vacancies_processed_count
+    return (vacancies_found_count, vacancies_processed_count, average_salary,)
 
 
 def main():
     '''Main function implementation'''
+    env = Env()
+    env.read_env()
+
     languages = (
-                'C#', 'Ruby', 'Java', 'C',
+                'C#', 'Ruby', 'Java', 'C', 'Perl',
                 'Objective-C', 'Scala', 'Go', 'C++',
-                'PHP', 'JavaScript', 'TypeScript', 'Python',
-                'Rust', 'Swift', 'Cobol', '1с',
+                'PHP', 'Python', 'JavaScript', 'TypeScript',
+                'Rust', 'Swift', 'Kotlin', '1с',
                 )
+    hh_lang_statistic = []
+    superjob_lang_statistic = []
 
-    hh_statistics = {}
-    superjob_statistics = {}
-    print(f'\033[92m\nPrepare job statistics, wait for a while please...\033[0m')
+    print(f'\nPrepare job statistics, wait for a while please...\n')
     for language in languages:
-        try:
-            hh_agregator = HeadHunterJobAgregator(language=language)
-            vacancies_found, vacancies_processed, averge_salary = hh_agregator.calculate_average_salary()
-            if vacancies_processed > 0:
-                hh_statistics[language] = dict(vacancies_found=vacancies_found,
-                                               vacancies_processed=vacancies_processed,
-                                               average_salary=averge_salary)
-        except requests.exceptions.HTTPError:
-            print(f'HH.RU - Error occured while load {language} vacancies')
+        vacancies_found, vacancies_processed, average_salary = get_salary_statistics(language, mode='headhunter')
+        hh_lang_statistic.append(dict(language=language,
+                                      vacancies_found=vacancies_found,
+                                      vacancies_processed=vacancies_processed,
+                                      average_salary=average_salary))
 
-        try:
-            superjob_agregator = SuperJobAgregator(superjob_api_key=SUPERJOB_API_KEY, language=language)
-            vacancies_found, vacancies_processed, averge_salary = superjob_agregator.calculate_average_salary()
-            if vacancies_processed > 0:
-                superjob_statistics[language] = dict(vacancies_found=vacancies_found,
-                                                     vacancies_processed=vacancies_processed,
-                                                     average_salary=averge_salary)
-        except requests.exceptions.HTTPError:
-            print(f'SUPERJOB.RU - Error occured while load {language} vacancies')
-    print_salary(hh_statistics, 'HeadHunter Moscow')
-    print_salary(superjob_statistics, 'SuperJob Moscow', limit=5)
+        vacancies_found, vacancies_processed, average_salary = get_salary_statistics(language, mode='superjob')
+        superjob_lang_statistic.append(dict(language=language,
+                                            vacancies_found=vacancies_found,
+                                            vacancies_processed=vacancies_processed,
+                                            average_salary=average_salary))
+    print_salary_statistics(hh_lang_statistic, 'HeadHunter Moscow')
+    print_salary_statistics(superjob_lang_statistic, 'SuperJob Moscow', limit=5)
 
 
 if __name__ == '__main__':

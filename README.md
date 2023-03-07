@@ -33,7 +33,7 @@ Then jump to project folder:
 $ cd salaryapi
 ```
 
-and create new environment to run the code:
+and create new virtual environment to run the code:
 ```console
 $ python3 -m venv venv
 ```
@@ -60,23 +60,26 @@ This command installs all necessary libraries (`requests`, `environs`, `terminal
 
 # Setup environment variables
 
-To work with [superjob.ru API](https://api.superjob.ru/) we need to define `SUPERJOB_API_KEY` token value:
+To work with [superjob.ru API](https://api.superjob.ru/) we need to define `SUPERJOB_API_KEY` environment variable.
 
----
+To do this, in project folder create new file with name - `.env` and add the line:
 
 ```
 SUPERJOB_API_KEY=xxxx
 ```
 
-Fill this variable with your personal value.
+where `xxxx` - please, replace with your personal token value.
 
+Save and close the file, go ahead with running program.
+
+---
 
 # Run program 
 
 To run program, in console execute command:
 
 ```console
-(venv) salaryapi $ python salaryapi.py
+(venv) salaryapi $ python salary.py
 ```
 
 # Control results
