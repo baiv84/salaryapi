@@ -135,3 +135,8 @@ dmypy.json
 # MacOS folders
 .DS_Store
 .DS_Store/
+
+# Docker files
+README_docker.md
+Dockerfile
+run.sh

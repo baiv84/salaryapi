@@ -12,7 +12,8 @@ def get_hh_page(language, area=1, period=30, page=0, per_page=100,
     '''Extract salaries from hh.ru search page with number=<page>'''
     exclude_words = ' not '.join(exclude_words)
     params = {
-            'text': f'{language} not {exclude_words} !(разработчик or программист or инженер or developer or programmer or engineer)',
+            'text': f'{language} not {exclude_words} !(разработчик or \
+                    программист or инженер or developer or programmer or engineer)',
             'area': area,
             'period': period,
             'page': page,
@@ -85,7 +86,7 @@ def get_superjob_page(language, town='Moscow', catalogues="48", page=0, per_page
     return superjob_page_salaries
 
 
-def paginator(language, page_func, per_page=100):
+def get_all_pages_salaries(language, page_func=get_hh_page, per_page=100):
     '''Get salaries from all pages calling <page_func>'''
     current_page_index = 0
     all_pages_salaries = []
@@ -113,7 +114,7 @@ def get_salary_statistics(language, mode='headhunter'):
     if mode not in page_func_modes:
         mode = 'headhunter'
 
-    vacancies_found = paginator(language, page_func=page_func_modes[mode])
+    vacancies_found = get_all_pages_salaries(language, page_func=page_func_modes[mode])
     for vacancy in vacancies_found:
         salary = predict_rub_salary(vacancy)
         if salary:
